@@ -13,6 +13,9 @@
 #include "sqfuncstate.h"
 #include "sqclass.h"
 
+extern SQInteger g_pendingLexerFirstLineNumber;
+
+
 static bool sq_aux_gettypedarg(HSQUIRRELVM v,SQInteger idx,SQObjectType type,SQObjectPtr **o)
 {
     *o = &stack_get(v,idx);
@@ -124,14 +127,21 @@ SQInteger sq_getversion()
     return SQUIRREL_VERSION_NUMBER;
 }
 
+void sq_setfirstline(SQInteger lineNumber)
+{
+	g_pendingLexerFirstLineNumber = lineNumber;
+}
+
 SQRESULT sq_compile(HSQUIRRELVM v,SQLEXREADFUNC read,SQUserPointer p,const SQChar *sourcename,SQBool raiseerror)
 {
     SQObjectPtr o;
 #ifndef NO_COMPILER
     if(Compile(v, read, p, sourcename, o, raiseerror?true:false, _ss(v)->_debuginfo)) {
+        g_pendingLexerFirstLineNumber = 1;
         v->Push(SQClosure::Create(_ss(v), _funcproto(o), _table(v->_roottable)->GetWeakRef(OT_TABLE)));
         return SQ_OK;
     }
+    g_pendingLexerFirstLineNumber = 1;
     return SQ_ERROR;
 #else
     return sq_throwerror(v,_SC("this is a no compiler build"));

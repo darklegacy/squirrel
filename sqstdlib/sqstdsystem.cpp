@@ -20,6 +20,11 @@
 #define screname rename
 #endif
 
+#ifdef SQSTD_PARANOID
+int (*sqstd_allow_remove)(const SQChar *filename) = NULL;
+int (*sqstd_allow_rename)(const SQChar *oldname, const SQChar *newname) = NULL;
+#endif
+
 static SQInteger _system_getenv(HSQUIRRELVM v)
 {
     const SQChar *s;
@@ -59,6 +64,10 @@ static SQInteger _system_remove(HSQUIRRELVM v)
 {
     const SQChar *s;
     sq_getstring(v,2,&s);
+#ifdef SQSTD_PARANOID
+	if (sqstd_allow_remove && !(*sqstd_allow_remove)(s))
+		return 0;
+#endif
     if(scremove(s)==-1)
         return sq_throwerror(v,_SC("remove() failed"));
     return 0;
@@ -69,6 +78,10 @@ static SQInteger _system_rename(HSQUIRRELVM v)
     const SQChar *oldn,*newn;
     sq_getstring(v,2,&oldn);
     sq_getstring(v,3,&newn);
+#ifdef SQSTD_PARANOID
+	if (sqstd_allow_rename && !(*sqstd_allow_rename)(oldn,newn))
+		return 0;
+#endif
     if(screname(oldn,newn)==-1)
         return sq_throwerror(v,_SC("rename() failed"));
     return 0;
@@ -119,8 +132,10 @@ static SQInteger _system_date(HSQUIRRELVM v)
 
 #define _DECL_FUNC(name,nparams,pmask) {_SC(#name),_system_##name,nparams,pmask}
 static const SQRegFunction systemlib_funcs[]={
+#ifndef SQSTD_PARANOID
     _DECL_FUNC(getenv,2,_SC(".s")),
     _DECL_FUNC(system,2,_SC(".s")),
+#endif
     _DECL_FUNC(clock,0,NULL),
     _DECL_FUNC(time,1,NULL),
     _DECL_FUNC(date,-1,_SC(".nn")),

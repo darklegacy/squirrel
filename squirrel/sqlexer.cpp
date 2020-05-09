@@ -18,6 +18,9 @@
 #define TERMINATE_BUFFER() {_longstr.push_back(_SC('\0'));}
 #define ADD_KEYWORD(key,id) _keywords->NewSlot( SQString::Create(ss, _SC(#key)) ,SQInteger(id))
 
+SQInteger g_pendingLexerFirstLineNumber = 1;
+
+
 SQLexer::SQLexer(){}
 SQLexer::~SQLexer()
 {
@@ -70,7 +73,8 @@ void SQLexer::Init(SQSharedState *ss, SQLEXREADFUNC rg, SQUserPointer up,Compile
 
     _readf = rg;
     _up = up;
-    _lasttokenline = _currentline = 1;
+    _lasttokenline = _currentline = g_pendingLexerFirstLineNumber;
+	g_pendingLexerFirstLineNumber = 1;
     _currentcolumn = 0;
     _prevtoken = -1;
     _reached_eof = SQFalse;

@@ -5,10 +5,19 @@
 #include <sqstdio.h>
 #include "sqstdstream.h"
 
+#ifdef SQSTD_PARANOID
+int (*sqstd_allow_fopen)(const SQChar *filename ,const SQChar *mode) = NULL;
+#endif
+
 #define SQSTD_FILE_TYPE_TAG (SQSTD_STREAM_TYPE_TAG | 0x00000001)
 //basic API
 SQFILE sqstd_fopen(const SQChar *filename ,const SQChar *mode)
 {
+#ifdef SQSTD_PARANOID
+	if (sqstd_allow_fopen && !(*sqstd_allow_fopen)(filename, mode))
+		return 0;
+#endif
+
 #ifndef SQUNICODE
     return (SQFILE)fopen(filename,mode);
 #else
@@ -460,9 +469,11 @@ SQInteger _g_io_dofile(HSQUIRRELVM v)
 
 #define _DECL_GLOBALIO_FUNC(name,nparams,typecheck) {_SC(#name),_g_io_##name,nparams,typecheck}
 static const SQRegFunction iolib_funcs[]={
+#ifndef SQSTD_PARANOID
     _DECL_GLOBALIO_FUNC(loadfile,-2,_SC(".sb")),
     _DECL_GLOBALIO_FUNC(dofile,-2,_SC(".sb")),
     _DECL_GLOBALIO_FUNC(writeclosuretofile,3,_SC(".sc")),
+#endif
     {NULL,(SQFUNCTION)0,0,NULL}
 };
 
@@ -471,6 +482,7 @@ SQRESULT sqstd_register_iolib(HSQUIRRELVM v)
     SQInteger top = sq_gettop(v);
     //create delegate
     declare_stream(v,_SC("file"),(SQUserPointer)SQSTD_FILE_TYPE_TAG,_SC("std_file"),_file_methods,iolib_funcs);
+#ifndef SQSTD_PARANOID
     sq_pushstring(v,_SC("stdout"),-1);
     sqstd_createfile(v,stdout,SQFalse);
     sq_newslot(v,-3,SQFalse);
@@ -480,6 +492,7 @@ SQRESULT sqstd_register_iolib(HSQUIRRELVM v)
     sq_pushstring(v,_SC("stderr"),-1);
     sqstd_createfile(v,stderr,SQFalse);
     sq_newslot(v,-3,SQFalse);
+#endif
     sq_settop(v,top);
     return SQ_OK;
 }

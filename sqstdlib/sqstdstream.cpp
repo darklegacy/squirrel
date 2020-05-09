@@ -97,6 +97,35 @@ SQInteger _stream_readn(HSQUIRRELVM v)
     return 1;
 }
 
+SQInteger _stream_readstring(HSQUIRRELVM v)
+{
+	SETUP_STREAM(v);
+	SQInt32 len;
+	SAFE_READN(&len, sizeof(SQInt32));
+	// sanity check on vals
+	if (len < 0 || len > 1024*1024)
+		return sq_throwerror(v,_SC("io error, invalid data"));
+	if (len > 0)
+	{
+		if (len <= 4096)
+		{
+			SQChar str[4096];
+			SAFE_READN(str, len);
+			sq_pushstring(v, str, len);
+		}
+		else
+		{
+			SQChar *str = (SQChar*) sq_malloc(sizeof(SQChar) * len);
+			SAFE_READN(str, len);
+			sq_pushstring(v, str, len);
+			sq_free(str, sizeof(SQChar) * len);
+		}
+	}
+	else
+		sq_pushstring(v, "", 0);
+    return 1;
+}
+
 SQInteger _stream_writeblob(HSQUIRRELVM v)
 {
     SQUserPointer data;
@@ -180,6 +209,21 @@ SQInteger _stream_writen(HSQUIRRELVM v)
     return 0;
 }
 
+SQInteger _stream_writestring(HSQUIRRELVM v)
+{
+	SETUP_STREAM(v);
+	const SQChar *str;
+	if(SQ_FAILED(sq_getstring(v,2,&str)))
+		return sq_throwerror(v, _SC("invalid parameter"));
+	SQInt32 len = (SQInt32) strlen(str);
+	if(len > 1024*1024)
+		return sq_throwerror(v, _SC("invalid parameter, string too long"));
+	self->Write(&len, sizeof(SQInt32));
+	if (len)
+		self->Write((void*)str, (SQInteger)len);
+	return 0;
+}
+
 SQInteger _stream_seek(HSQUIRRELVM v)
 {
     SETUP_STREAM(v);
@@ -241,8 +285,10 @@ SQInteger _stream_eos(HSQUIRRELVM v)
 static const SQRegFunction _stream_methods[] = {
     _DECL_STREAM_FUNC(readblob,2,_SC("xn")),
     _DECL_STREAM_FUNC(readn,2,_SC("xn")),
+    _DECL_STREAM_FUNC(readstring,1,_SC("x")),
     _DECL_STREAM_FUNC(writeblob,-2,_SC("xx")),
     _DECL_STREAM_FUNC(writen,3,_SC("xnn")),
+    _DECL_STREAM_FUNC(writestring,2,_SC("xs")),
     _DECL_STREAM_FUNC(seek,-2,_SC("xnn")),
     _DECL_STREAM_FUNC(tell,1,_SC("x")),
     _DECL_STREAM_FUNC(len,1,_SC("x")),

@@ -216,6 +216,7 @@ SQUIRREL_API SQInteger sq_getvmstate(HSQUIRRELVM v);
 SQUIRREL_API SQInteger sq_getversion();
 
 /*compiler*/
+SQUIRREL_API void sq_setfirstline(SQInteger lineNumber);// use this line number as the first line number of the next compile, reset to 1 after ech compile -- Georg Fischer
 SQUIRREL_API SQRESULT sq_compile(HSQUIRRELVM v,SQLEXREADFUNC read,SQUserPointer p,const SQChar *sourcename,SQBool raiseerror);
 SQUIRREL_API SQRESULT sq_compilebuffer(HSQUIRRELVM v,const SQChar *s,SQInteger size,const SQChar *sourcename,SQBool raiseerror);
 SQUIRREL_API void sq_enabledebuginfo(HSQUIRRELVM v, SQBool enable);

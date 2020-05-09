@@ -1,4 +1,9 @@
 
+// enabling this option removes or modifies some stdlib function in the system and I/O libraries for a more secure environment
+// (the ability to execute a system command, file operations like delete and open can be filtered through external callbacks
+// that can deny or limit their functionality)
+#define SQSTD_PARANOID
+
 #ifdef _SQ64
 
 #ifdef _MSC_VER
